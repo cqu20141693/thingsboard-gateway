@@ -206,6 +206,8 @@ class TBClient(threading.Thread):
         return self.__is_connected
 
     def _on_connect(self, client, userdata, flags, result_code, *extra_params):
+        """@note-mqtt连接平台回调
+        """
         log.debug('TB client %s connected to ThingsBoard', str(client))
         if result_code == 0:
             self.__is_connected = True
@@ -215,7 +217,8 @@ class TBClient(threading.Thread):
     def _on_disconnect(self, client, userdata, result_code):
         # pylint: disable=protected-access
         if self.client._client != client:
-            log.info("TB client %s has been disconnected. Current client for connection is: %s", str(client), str(self.client._client))
+            log.info("TB client %s has been disconnected. Current client for connection is: %s", str(client),
+                     str(self.client._client))
             client.disconnect()
             client.loop_stop()
         else:
@@ -250,6 +253,7 @@ class TBClient(threading.Thread):
                         break
                     log.debug("connecting to ThingsBoard")
                     try:
+                        # note-tb_client连接平台
                         self.client.connect(keepalive=keep_alive,
                                             min_reconnect_delay=self.__min_reconnect_delay)
                     except ConnectionRefusedError:

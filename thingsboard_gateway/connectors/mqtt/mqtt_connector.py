@@ -27,6 +27,7 @@ from thingsboard_gateway.gateway.constants import SEND_ON_CHANGE_PARAMETER, DEFA
 from thingsboard_gateway.gateway.constant_enums import Status
 from thingsboard_gateway.connectors.connector import Connector, log
 from thingsboard_gateway.connectors.mqtt.mqtt_decorators import CustomCollectStatistics
+from thingsboard_gateway.model.util import note_log
 from thingsboard_gateway.tb_utility.tb_loader import TBModuleLoader
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
@@ -39,7 +40,6 @@ except ImportError:
     from paho.mqtt.client import Client
 
 from paho.mqtt.client import MQTTv31, MQTTv311, MQTTv5
-
 
 MQTT_VERSIONS = {
     3: MQTTv31,
@@ -56,9 +56,9 @@ RESULT_CODES_V3 = {
 }
 
 RESULT_CODES_V5 = {
-    4:   "Disconnect with Will Message",
-    16:  "No matching subscribers",
-    17:  "No subscription existed",
+    4: "Disconnect with Will Message",
+    16: "No matching subscribers",
+    17: "No subscription existed",
     128: "Unspecified error",
     129: "Malformed Packet",
     130: "Protocol Error",
@@ -115,7 +115,8 @@ class MqttConnector(Connector, Thread):
         # Extract main sections from configuration ---------------------------------------------------------------------
         self.__broker = config.get('broker')
         self.__send_data_only_on_change = self.__broker.get(SEND_ON_CHANGE_PARAMETER, DEFAULT_SEND_ON_CHANGE_VALUE)
-        self.__send_data_only_on_change_ttl = self.__broker.get(SEND_ON_CHANGE_TTL_PARAMETER, DEFAULT_SEND_ON_CHANGE_INFINITE_TTL_VALUE)
+        self.__send_data_only_on_change_ttl = self.__broker.get(SEND_ON_CHANGE_TTL_PARAMETER,
+                                                                DEFAULT_SEND_ON_CHANGE_INFINITE_TTL_VALUE)
 
         # for sendDataOnlyOnChange param
         self.__topic_content = {}
@@ -233,7 +234,7 @@ class MqttConnector(Connector, Thread):
 
     def get_config(self):
         return self.config
-    
+
     def get_ttl_for_duplicates(self, device_name):
         return self.__send_data_only_on_change_ttl
 
@@ -476,6 +477,7 @@ class MqttConnector(Connector, Thread):
         return False
 
     def _save_converted_msg(self, topic, data):
+        note_log.info(f"mqtt _save_converted_msg {topic} {data}")
         if self.__gateway.send_to_storage(self.name, data) == Status.SUCCESS:
             self.statistics['MessagesSent'] += 1
             self.__log.debug("Successfully converted message from topic %s", topic)
@@ -571,8 +573,8 @@ class MqttConnector(Connector, Thread):
                         if handler.get("deviceTypeTopicExpression"):
                             device_type_match = search(handler["deviceTypeTopicExpression"], message.topic)
                             found_device_type = device_type_match.group(0) if device_type_match is not None else \
-                            handler[
-                                "deviceTypeTopicExpression"]
+                                handler[
+                                    "deviceTypeTopicExpression"]
                         elif handler.get("deviceTypeJsonExpression"):
                             found_device_type = TBUtility.get_value(handler["deviceTypeJsonExpression"], content)
 
@@ -857,7 +859,6 @@ class MqttConnector(Connector, Thread):
             for rpc_config in self.__server_side_rpc:
                 if search(rpc_config["deviceNameFilter"], content["device"]) \
                         and search(rpc_config["methodFilter"], rpc_method) is not None:
-
                     return self.__process_rpc_request(content, rpc_config)
 
             self.__log.error("RPC not handled: %s", content)
@@ -892,7 +893,7 @@ class MqttConnector(Connector, Thread):
                             device_config['converter'].update(config)
 
                         if device_config['converter']['deviceNameTopicExpression'] == config[
-                                'deviceNameTopicExpression']:
+                            'deviceNameTopicExpression']:
                             device_config['converter'].update(config)
                     except KeyError:
                         continue
@@ -902,8 +903,10 @@ class MqttConnector(Connector, Thread):
     def _init_send_current_converter_config(self):
         for converter_obj in self.get_converters():
             try:
+                convert_config = {self.name + ':' + converter_obj.__class__.__name__: converter_obj.config}
+                note_log.info(f"mqtt connect covert_config={convert_config}")
                 self.__gateway.tb_client.client.send_attributes(
-                    {self.name + ':' + converter_obj.__class__.__name__: converter_obj.config})
+                    convert_config)
             except AttributeError:
                 continue
 

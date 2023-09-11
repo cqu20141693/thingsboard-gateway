@@ -68,6 +68,7 @@ setup(
         'grpcio<=1.43.0',
         'protobuf',
         'cachetools',
+        'pymodbus==2.5.2',
         'tb-mqtt-client>=1.5'
     ],
     download_url='https://github.com/thingsboard/thingsboard-gateway/archive/%s.tar.gz' % VERSION,
