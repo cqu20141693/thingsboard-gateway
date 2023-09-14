@@ -77,6 +77,7 @@ DEFAULT_CONNECTORS = {
     "socket": "SocketConnector",
     "xmpp": "XMPPConnector",
     "ocpp": "OcppConnector",
+    "simulator": "SimulatorConnector",
 }
 
 DEFAULT_STATISTIC = {
@@ -385,7 +386,9 @@ class TBGatewayService:
                     self.__request_config_after_connect = True
                     self.__check_shared_attributes()
 
-                if cur_time - gateway_statistic_send > self.__statistics['statsSendPeriodInSeconds'] * 1000 and self.tb_client.is_connected():
+                if cur_time - gateway_statistic_send > self.__statistics[
+                    'statsSendPeriodInSeconds'] * 1000 and self.tb_client.is_connected():
+                    log.warning(f"gateway stats sending")
                     summary_messages = self.__form_statistics()
                     # with self.__lock:
                     self.tb_client.client.send_telemetry(summary_messages)
@@ -394,6 +397,7 @@ class TBGatewayService:
 
                 if cur_time - connectors_configuration_check_time > self.__config["thingsboard"].get(
                         "checkConnectorsConfigurationInSeconds", 60) * 1000:
+                    log.warning(f"gateway connector config sending")
                     self.check_connector_configuration_updates()
                     connectors_configuration_check_time = time() * 1000
 
@@ -573,7 +577,8 @@ class TBGatewayService:
         self.tb_client.client.request_attributes(callback=self._attributes_parse)
 
     def __register_connector(self, session_id, connector_key):
-        if self.__grpc_connectors.get(connector_key) is not None and self.__grpc_connectors[connector_key]['name'] not in self.available_connectors:
+        if self.__grpc_connectors.get(connector_key) is not None and self.__grpc_connectors[connector_key][
+            'name'] not in self.available_connectors:
             target_connector = self.__grpc_connectors.get(connector_key)
             connector = GrpcConnector(self, target_connector['config'], self.__grpc_manager, session_id)
             connector.setName(target_connector['name'])
@@ -588,7 +593,8 @@ class TBGatewayService:
             log.error("GRPC configuration for connector with key: %s - not found", connector_key)
 
     def __unregister_connector(self, session_id, connector_key):
-        if self.__grpc_connectors.get(connector_key) is not None and self.__grpc_connectors[connector_key]['name'] in self.available_connectors:
+        if self.__grpc_connectors.get(connector_key) is not None and self.__grpc_connectors[connector_key][
+            'name'] in self.available_connectors:
             connector_name = self.__grpc_connectors[connector_key]['name']
             target_connector: GrpcConnector = self.available_connectors.pop(connector_name)
             self.__grpc_manager.unregister(Status.SUCCESS, session_id, target_connector)
@@ -687,7 +693,8 @@ class TBGatewayService:
         for connector_type in self.connectors_configs:
             for connector_config in self.connectors_configs[connector_type]:
                 if self._implemented_connectors.get(connector_type.lower()) is not None:
-                    if connector_type.lower() != 'grpc' and 'Grpc' not in self._implemented_connectors[connector_type.lower()].__name__:
+                    if connector_type.lower() != 'grpc' and 'Grpc' not in self._implemented_connectors[
+                        connector_type.lower()].__name__:
                         for config in connector_config["config"]:
                             connector = None
                             try:
@@ -824,7 +831,8 @@ class TBGatewayService:
                                     adopted_data_size = empty_adopted_data_size
 
                             # Now, loop through telemetry. Possibly have some unsent attributes that have been adopted.
-                            telemetry = data['telemetry'] if isinstance(data['telemetry'], list) else [data['telemetry']]
+                            telemetry = data['telemetry'] if isinstance(data['telemetry'], list) else [
+                                data['telemetry']]
                             ts_to_index = {}
                             for ts_kv_list in telemetry:
                                 ts = ts_kv_list['ts']
@@ -1238,7 +1246,8 @@ class TBGatewayService:
         return self.__connected_devices if connector_name is None else {
             device_name: self.__connected_devices[device_name]["device_type"] for device_name in
             self.__connected_devices.keys() if self.__connected_devices[device_name].get("connector") is not None and
-                                               self.__connected_devices[device_name]["connector"].get_name() == connector_name}
+                                               self.__connected_devices[device_name][
+                                                   "connector"].get_name() == connector_name}
 
     def __process_async_device_actions(self):
         while not self.stopped:

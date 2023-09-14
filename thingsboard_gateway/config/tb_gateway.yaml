@@ -1,12 +1,12 @@
 thingsboard:
-  host: thingsboard.cloud
+  host: localhost
   port: 1883
   remoteShell: false
   remoteConfiguration: false
   statistics:
     enable: true
-    statsSendPeriodInSeconds: 60
-#    configuration: statistics/statistics_linux.json
+    statsSendPeriodInSeconds: 600
+  #    configuration: statistics/statistics_linux.json
   deviceFiltering:
     enable: false
     filterFile: list.json
@@ -21,6 +21,13 @@ thingsboard:
     inactivityCheckPeriodSeconds: 10
   security:
     accessToken: PUT_YOUR_GW_ACCESS_TOKEN_HERE
+    username: tb-gateway-1
+    clientId: tb-gateway-1
+    password: witeam@123
+#    accessToken: PUT_YOUR_GW_ACCESS_TOKEN_HERE
+#    username: witeam
+#    clientId: witeam-mqtt
+#    password: witeam@123
   qos: 1
 storage:
   type: memory
@@ -45,11 +52,15 @@ grpc:
   minTimeBetweenPingsMs: 10000
   minPingIntervalWithoutDataMs: 5000
 connectors:
-  -
-    name: MQTT Broker Connector
+  - name: MQTT Broker Connector
     type: mqtt
     configuration: mqtt.json
-
+  - name: Simulator Connector
+    type: simulator
+    configuration: simulator.json
+  - name: simulator2 Connector
+    type: simulator
+    configuration: simulator_2.json
 #  -
 #    name: Modbus Connector
 #    type: modbus
